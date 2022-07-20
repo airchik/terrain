@@ -6,7 +6,7 @@ var scene = provides('engine.scene'),
 scene.Node = function SceneNode(children){
     this.children = children || [];
 };
-scene.Node.prototype = {
+scene.Node.prototype = {  // 相当于一个基类方法
     debug: false,
     children: [],
     visit: function(graph) {
@@ -297,7 +297,7 @@ scene.Mirror.prototype = extend({}, scene.Node.prototype, {
 
         graph.uniforms.worldViewProjection = mat4.multiply(projection, this._worldView_, this._worldViewProjection);
         graph.uniforms.projection = projection;
-        
+
     },
     exit: function (graph) {
         graph.popUniforms();

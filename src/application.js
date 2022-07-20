@@ -80,13 +80,15 @@ function prepareScene(){
         skyShader = shaderManager.get('sky'),
         waterShader = shaderManager.get('water'),
         scale = 75110,
-        far_away = scale*2.0,
+        far_away = scale*2.0, // madd: 相机的远平面
         vscale = 6055;
 
     globalUniforms = {
         sunColor: [2.0, 1.75, 1.65],
+        // sunColor: [1.0, 0.0, 1.65],
         sunDirection: [-1.0, 0.2, 0.0],
         horizonColor: [0.6, 0.7, 1.0],
+        // horizonColor: [1.0, 0.0, 1.0],
         zenithColor: [0.025, 0.1, 0.5],
         clip: 0.0,
         mirror: 1.0,
@@ -97,49 +99,51 @@ function prepareScene(){
     vec3.normalize(globalUniforms.sunDirection);
 
 
-    var fakeCamera = new scene.Camera([]),
-        terrainTree = new terrain.QuadTree(fakeCamera, 64, HIGH_LOD, far_away),
-        terrainTransform = new scene.Transform([
-            new scene.Material(terrainShader, {
-                    color: [0.2, 0.4, 0.2],
-                    heightSampler: heightmapTexture
-                },
-                [terrainTree]
-            )
+    var fakeCamera, terrainTree, terrainTransform, lowresTerrainTree, lowresTerrainTransform, skyBox, reflectionFBO,
+        reflectionTarget, waterTransform, globalUniformsNode, camera;
+    fakeCamera = new scene.Camera([]);
+    terrainTree = new terrain.QuadTree(fakeCamera, 64, HIGH_LOD, far_away);
+    terrainTransform = new scene.Transform([ //Material(shader, uniforms, children)
+        new scene.Material(terrainShader, {
+                color: [0.2, 0.4, 0.2],
+                heightSampler: heightmapTexture
+            },
+            [terrainTree]
+        )
+    ]);
+    lowresTerrainTree = new terrain.QuadTree(fakeCamera, 32, HIGH_LOD >> 1, far_away);
+    lowresTerrainTransform = new scene.Transform([
+        new scene.Material(terrainShader, {
+                color: [0.2, 0.4, 0.2],
+                heightSampler: heightmapTexture
+            },
+            [lowresTerrainTree]
+        )
+    ]);
+    skyBox = new scene.Skybox(scale, skyShader, {});
+    reflectionFBO = new glUtils.FBO(1024, 512, floatFormat);
+    reflectionTarget = new scene.RenderTarget(reflectionFBO, [ // RenderTarget(fbo, children)
+        new scene.Mirror(vec3.create([0.0, -1.0, 0.0]), [
+            lowresTerrainTransform
         ]),
-        lowresTerrainTree = new terrain.QuadTree(fakeCamera, 32, HIGH_LOD>>1, far_away),
-        lowresTerrainTransform = new scene.Transform([
-            new scene.Material(terrainShader, {
-                    color: [0.2, 0.4, 0.2],
-                    heightSampler: heightmapTexture
-                },
-                [lowresTerrainTree]
-            )
-        ]),
-        skyBox = new scene.Skybox(scale, skyShader, {}),
-        reflectionFBO = new glUtils.FBO(1024, 512, floatFormat),
-        reflectionTarget = new scene.RenderTarget(reflectionFBO, [
-            new scene.Mirror(vec3.create([0.0, -1.0, 0.0]), [
-                lowresTerrainTransform
-            ]),
-            skyBox
+        skyBox
 
-        ]),
-        waterTransform = new scene.Transform([
-                new scene.Material(waterShader, {
-                        color: [0.4, 0.5, 0.8],
-                        normalSampler: waternormals3Texture,
-                        reflectionSampler: reflectionFBO
-                    }, [
-                        new scene.SimpleMesh(new glUtils.VBO(mesh.grid(1000)))
-                    ]
-                )
-        ]),
-        globalUniformsNode = new scene.Uniforms(globalUniforms, [
-            //reflectionUniforms
-            reflectionTarget, terrainTransform, waterTransform, skyBox
-        ]),
-        camera = new scene.Camera([globalUniformsNode]);
+    ]);
+    waterTransform = new scene.Transform([
+        new scene.Material(waterShader, {
+                color: [0.4, 0.5, 0.8],
+                normalSampler: waternormals3Texture,
+                reflectionSampler: reflectionFBO
+            }, [
+                new scene.SimpleMesh(new glUtils.VBO(mesh.grid(1000)))
+            ]
+        )
+    ]);
+    globalUniformsNode = new scene.Uniforms(globalUniforms, [
+        //reflectionUniforms
+        reflectionTarget, terrainTransform, waterTransform, skyBox
+    ]);
+    camera = new scene.Camera([globalUniformsNode]);
     window.camera = camera;
     vec3.set([26244.78125, 509.8193359375, 57317.26953125], camera.position);
     //vec3.set([0, 1, 0], camera.position);
@@ -256,12 +260,12 @@ function prepareScene(){
         setLod(HIGH_LOD);
         $('.lq').addClass('active');
         $(this).removeClass('active');
-    }); 
+    });
     $('.lq').click(function() {
         setLod(LOW_LOD);
         $('.hq').addClass('active');
         $(this).removeClass('active');
-    }); 
+    });
 
     function setLod(lod){
         terrainTree.depth = lod;
