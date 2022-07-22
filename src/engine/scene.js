@@ -230,7 +230,7 @@ scene.Transform.prototype = extend({}, scene.Node, {
             graph.uniforms.modelTransform = this.aux;
         }
         else{
-            graph.uniforms.modelTransform = this.matrix;
+            graph.uniforms.modelTransform = this.matrix;  // 该 node 为顶层结点
         }
     },
     exit: function(graph) {

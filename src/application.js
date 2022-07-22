@@ -103,9 +103,10 @@ function prepareScene(){
         reflectionTarget, waterTransform, globalUniformsNode, camera;
     fakeCamera = new scene.Camera([]);
     terrainTree = new terrain.QuadTree(fakeCamera, 64, HIGH_LOD, far_away);
-    terrainTransform = new scene.Transform([ //Material(shader, uniforms, children)
-        new scene.Material(terrainShader, {
-                color: [0.2, 0.4, 0.2],
+    terrainTransform = new scene.Transform([ // Transform(children), 该Transform-Node结点的matrix默认为identity
+        new scene.Material(terrainShader, { //Material(shader, uniforms, children)
+                // color: [0.2, 0.4, 0.2],
+                color: [1.0, 0.0, 1.0],
                 heightSampler: heightmapTexture
             },
             [terrainTree]
@@ -114,16 +115,17 @@ function prepareScene(){
     lowresTerrainTree = new terrain.QuadTree(fakeCamera, 32, HIGH_LOD >> 1, far_away);
     lowresTerrainTransform = new scene.Transform([
         new scene.Material(terrainShader, {
-                color: [0.2, 0.4, 0.2],
+                // color: [0.2, 0.4, 0.2],
+                color: [1.0, 0.0, 1.0],
                 heightSampler: heightmapTexture
             },
             [lowresTerrainTree]
         )
     ]);
-    skyBox = new scene.Skybox(scale, skyShader, {});
+    skyBox = new scene.Skybox(scale, skyShader, {});  //SkyboxNode(scale, shader, uniforms) {
     reflectionFBO = new glUtils.FBO(1024, 512, floatFormat);
     reflectionTarget = new scene.RenderTarget(reflectionFBO, [ // RenderTarget(fbo, children)
-        new scene.Mirror(vec3.create([0.0, -1.0, 0.0]), [
+        new scene.Mirror(vec3.create([0.0, -1.0, 0.0]), [  // MirrorNode(plane, children){
             lowresTerrainTransform
         ]),
         skyBox
